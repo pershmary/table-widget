@@ -1,0 +1,3 @@
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body { font-family: "Inter", sans-serif; background: var(--background-unaccented_background-color); }
+.demo-stage { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; border: 0; }

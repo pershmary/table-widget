@@ -1361,8 +1361,8 @@
     if (topCell) {
       // В верхнем левом углу таблицы плюса нет — там главный маркер.
       // Плюсы на верхней границе таблицы — на левом и правом углу ячейки шапки: новый столбец слева / справа.
-      if (startOf(cell) > 0) place(btn.colLeft, left, top);
-      place(btn.colRight, right, top);
+      if (startOf(cell) > 0) place(btn.colLeft, left, top - 1);
+      place(btn.colRight, right, top - 1);
       // По горизонтали — центр ячейки, по вертикали — над верхней линией.
       place(colHandle, (left + right) / 2, top);
       if (selection && selection.kind === 'col' && selection.index === startOf(cell)) colHandle.hidden = true;
@@ -1373,8 +1373,8 @@
       place(handle, left, (top + bottom) / 2);
       fitRowHandle(handle, bottom - top);
       // Плюсы на левой границе таблицы — на верхнем и нижнем углу ячейки левого столбца: новая строка сверху / снизу.
-      if (!topCell) place(btn.rowAbove, left, top);
-      place(btn.rowBelow, left, bottom);
+      if (!topCell) place(btn.rowAbove, left - 1, top);
+      place(btn.rowBelow, left - 1, bottom);
       handle.classList.remove('is-locked');   // верхнюю (заглавную) строку тоже можно двигать
       // На выделенной строке уже стоит активный хэндлер.
       if (selection && selection.kind === 'row' && selection.row === cell.parentElement) handle.hidden = true;
