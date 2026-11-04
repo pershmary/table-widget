@@ -40,7 +40,8 @@ page += style(read('vendor/ui-kit/components/demo-frame/demo-frame.css'))
 page += style(font_css + outer_css)
 page += '</head><body>\n<iframe id="demo-stage" class="demo-stage" title="Интерактивная демка виджета «Таблица»" srcdoc="' + html.escape(demo, quote=True) + '"></iframe>\n'
 page += script(read('vendor/ui-kit/components/demo-frame/demo-frame.js'))
-page += script(read('js/demo-frame.js'))
+frame_js = re.sub(r"assets/roles/[a-z]+\.svg", lambda m: 'data:image/svg+xml;base64,' + base64.b64encode((ROOT / m[0]).read_bytes()).decode(), read('js/demo-frame.js'))
+page += script(frame_js)
 page += '</body></html>\n'
 page = '\n'.join(line.rstrip() for line in page.split('\n'))
 (ROOT / 'index.html').write_text(page)

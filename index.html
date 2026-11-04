@@ -2200,6 +2200,19 @@
 html, body { margin: 0; height: 100%; overflow: hidden; }
 body { font-family: "Inter", sans-serif; background: var(--background-unaccented_background-color); }
 .demo-stage { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; border: 0; }
+
+.df-team__label { width: 16px; display: flex; align-items: center; min-height: 17px; }
+.df-team__label img { display: block; flex: none; }
+
+.demo-developers {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 6px;
+  gap: 8px;
+  border-radius: 8px;
+  background: var(--background-background-color);
+}
+.demo-developers .df-team { padding: 0; border-radius: 0; background: transparent; }
 </style></head><body>
 <iframe id="demo-stage" class="demo-stage" title="Интерактивная демка виджета «Таблица»" srcdoc="&lt;!doctype html&gt;
 &lt;html lang=&quot;ru&quot;&gt;
@@ -9169,9 +9182,26 @@ document.addEventListener(&#x27;click&#x27;, function (e) {
 </script><script>/* The complete editor runs in its own viewport so frame scaling preserves pointer coordinates. */
 window.demoFrame = DemoFrame.mount({
   stage: document.getElementById('demo-stage'),
-  head: { title: 'Виджет «Таблица»' },
+  head: {
+    title: 'Виджет “Таблица”',
+    version: '27.1100',
+    status: 'Устный ОК 21.08.26',
+    href: 'http://axure.tensor.ru/StandardsV8/guidelines.html'
+  },
   devices: [
     { id: 'monitor', icon: 'monitor', label: 'Монитор', size: '1600×900', name: 'монитор' }
+  ],
+  team: [
+    {
+      label: 'Дизайнер', name: 'Першина Мария',
+      links: [
+        { title: 'Согласование макета', href: 'https://online.sbis.ru/opendoc.html?guid=019f372a-d94b-799b-8809-922f4a6cbfd0&client=3' },
+        { title: 'Описание БП', href: 'https://online.sbis.ru/page/kbase_entity/2aee34b7-3088-4811-8175-d43fb76422d8?folderId=e097f167-33e0-4f65-8643-7ef473342623' }
+      ]
+    },
+    { label: 'Разработчик Web', name: 'Губин Павел' },
+    { label: 'Разработчик iOS', name: 'Ципорин Андрей' },
+    { label: 'Разработчик Android', name: 'Болдинов Алексей' }
   ],
   device: 'monitor',
   scenarios: [{ id: 'demo', title: 'Общее демо' }],
@@ -9181,4 +9211,26 @@ window.demoFrame = DemoFrame.mount({
     href: 'https://www.figma.com/proto/BWdweg8jrgKlemw9VsiO9W/%D0%92%D0%B8%D0%B4%D0%B6%D0%B5%D1%82-%22%D0%A2%D0%B0%D0%B1%D0%BB%D0%B8%D1%86%D0%B0%22?node-id=652-75125&viewport=327%2C725%2C0.15&t=Fk1QWmyLkgtmM0Ic-8&scaling=min-zoom&content-scaling=fixed&starting-point-node-id=652%3A75125&page-id=652%3A55063&hide-ui=1'
   }]
 });
+
+// Keep the ui-kit component unchanged; enhance role labels in this demo only.
+['data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEzLjM3ODMgMS4zNjM5MkMxMy42MTE0IDEuMTMwODggMTMuOTI3NSAwLjk5OTkwOCAxNC4yNTcyIDAuOTk5OTA4QzE0LjU4NjkgMC45OTk5MDggMTQuOTAzIDEuMTMwODcgMTUuMTM2MSAxLjM2Mzk5QzE1LjM2OTIgMS41OTcwNSAxNS41MDAyIDEuOTEzMTkgMTUuNTAwMiAyLjI0MjkzQzE1LjUwMDIgMi41NzEzNyAxNS4zNzAyIDIuODg2MyAxNS4xMzg5IDMuMTE5MDlMMTAuNTc5IDcuODQ1NDhDMTAuNDcyOSA3Ljk1NTQ0IDEwLjMxMzQgNy45OTUzNiAxMC4xNjggNy45NDgzNEMxMC4wMjI3IDcuOTAxMzIgOS45MTY3NiA3Ljc3NTU5IDkuODk1MTQgNy42MjQzM0M5Ljg3ODE3IDcuNTA1NTIgOS43OTgxMSA3LjM0ODk1IDkuNjUyMDYgNy4yMDM4QzkuNTA3NTkgNy4wNjAyMiA5LjMzNDggNi45NjQ0MiA5LjE4NTcxIDYuOTM0MDZDOS4wNDUxNyA2LjkwNTQ0IDguOTMwNzEgNi44MDM3NyA4Ljg4NTcyIDYuNjY3NkM4Ljg0MDcyIDYuNTMxNDIgOC44NzIwOCA2LjM4MTU3IDguOTY3ODkgNi4yNzQ4NkwxMy4zNjM0IDEuMzc5NThDMTMuMzY4MiAxLjM3NDIzIDEzLjM3MzIgMS4zNjkwMSAxMy4zNzgzIDEuMzYzOTJaIiBmaWxsPSIjODk5MUE5Ii8+CjxwYXRoIGQ9Ik02Ljc4MzgzIDguNTQzNzFDNi43ODM4MyA3LjY5NjY5IDcuNDU5MjEgNy4wMDE0NyA4LjMwODE4IDcuMDAxNDdDOS4xNTcxNSA3LjAwMTQ3IDkuODMyNTQgNy42OTY2OCA5LjgzMjU0IDguNTQzNzFDOS44MzI1NCA5LjYwMDEzIDguOTg4NDcgMTAuNDY2NiA3LjkzMzQgMTAuNDY2NkM3LjIzOTA1IDEwLjQ2NjYgNi41MzIyMyAxMC4xMDgzIDYuMTEzMDcgOS41NDM1NUM2LjAyMjk5IDkuNDIyMTggNi4wMDkwMSA5LjI2MDM5IDYuMDc2OTQgOS4xMjUzN0M2LjE0NDg4IDguOTkwMzUgNi4yODMxMiA4LjkwNTE1IDYuNDM0MjcgOC45MDUxNUM2LjQ5MTIxIDguOTA1MTUgNi41ODY3MiA4Ljg3Njk5IDYuNjY1NDYgOC44MDg4OUM2LjczNDgzIDguNzQ4OTEgNi43ODM4MyA4LjY2NTMgNi43ODM4MyA4LjU0MzcxWiIgZmlsbD0iIzg5OTFBOSIvPgo8cGF0aCBkPSJNMC45MzQ1NyA0LjAwMDI3QzAuOTM0NTcgMy4wNDI5OCAxLjcxMDYxIDIuMjY2OTQgMi42Njc5MSAyLjI2Njk0SDguNjY3ODdDOC44ODg3OSAyLjI2Njk0IDkuMDY3ODcgMi40NDYwMiA5LjA2Nzg3IDIuNjY2OTRDOS4wNjc4NyAyLjg4Nzg1IDguODg4NzkgMy4wNjY5NCA4LjY2Nzg3IDMuMDY2OTRIMi42Njc5MUMyLjE1MjQ0IDMuMDY2OTQgMS43MzQ1NyAzLjQ4NDgxIDEuNzM0NTcgNC4wMDAyN1YxMC42NjY5QzEuNzM0NTcgMTEuMTgyNCAyLjE1MjQ0IDExLjYwMDMgMi42Njc5MSAxMS42MDAzSDEzLjMzNDZDMTMuODUgMTEuNjAwMyAxNC4yNjc5IDExLjE4MjQgMTQuMjY3OSAxMC42NjY5VjcuMzMzNjFDMTQuMjY3OSA3LjExMjY5IDE0LjQ0NyA2LjkzMzYxIDE0LjY2NzkgNi45MzM2MUMxNC44ODg4IDYuOTMzNjEgMTUuMDY3OSA3LjExMjY5IDE1LjA2NzkgNy4zMzM2MVYxMC42NjY5QzE1LjA2NzkgMTEuNjI0MiAxNC4yOTE4IDEyLjQwMDMgMTMuMzM0NiAxMi40MDAzSDIuNjY3OTFDMS43MTA2IDEyLjQwMDMgMC45MzQ1NyAxMS42MjQyIDAuOTM0NTcgMTAuNjY2OVY0LjAwMDI3WiIgZmlsbD0iIzg5OTFBOSIvPgo8cGF0aCBkPSJNNC42NjU4MiAxMy43MzMzQzQuNDQ0OTEgMTMuNzMzMyA0LjI2NTgyIDEzLjkxMjQgNC4yNjU4MiAxNC4xMzMzQzQuMjY1ODIgMTQuMzU0MyA0LjQ0NDkxIDE0LjUzMzMgNC42NjU4MiAxNC41MzMzSDEwLjk5OTFDMTEuMjIwMSAxNC41MzMzIDExLjM5OTEgMTQuMzU0MyAxMS4zOTkxIDE0LjEzMzNDMTEuMzk5MSAxMy45MTI0IDExLjIyMDEgMTMuNzMzMyAxMC45OTkxIDEzLjczMzNINC42NjU4MloiIGZpbGw9IiM4OTkxQTkiLz4KPC9zdmc+Cg==', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTciIHZpZXdCb3g9IjAgMCAxNiAxNyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEuNSA5QzEuNSA3LjI3NjA5IDIuMTg0ODIgNS42MjI3OSAzLjQwMzgxIDQuNDAzODFDNC42MjI3OSAzLjE4NDgyIDYuMjc2MDkgMi41IDggMi41QzkuNzIzOTEgMi41IDExLjM3NzIgMy4xODQ4MiAxMi41OTYyIDQuNDAzODFDMTMuODE1MiA1LjYyMjc5IDE0LjUgNy4yNzYwOSAxNC41IDlDMTQuNSAxMC43MjM5IDEzLjgxNTIgMTIuMzc3MiAxMi41OTYyIDEzLjU5NjJDMTEuMzc3MiAxNC44MTUyIDkuNzIzOTEgMTUuNSA4IDE1LjVDNi4yNzYwOSAxNS41IDQuNjIyNzkgMTQuODE1MiAzLjQwMzgxIDEzLjU5NjJDMi4xODQ4MiAxMi4zNzcyIDEuNSAxMC43MjM5IDEuNSA5Wk0xNC41IDlIMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZT0iIzg5OTFBOSIvPgo8cGF0aCBkPSJNMTEgOUMxMC44NTI2IDExLjU1OTggOS44MDIwMiAxMy41MTEzIDggMTUuNUM2LjE5Nzk4IDEzLjUxMTMgNS4xNDczNiAxMS41NTk4IDUgOUM1LjE0NzM2IDYuNDQwMTYgNi4xOTc5OCA0LjQ4ODcgOCAyLjVDOS44MDIwMiA0LjQ4ODcgMTAuODUyNiA2LjQ0MDE2IDExIDlaIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZT0iIzg5OTFBOSIvPgo8L3N2Zz4K', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTciIHZpZXdCb3g9IjAgMCAxNiAxNyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwLjExODEgNC40NTEzM0M5LjM5NjA4IDUuMTczOTkgOC4wMjQ3NSA0Ljk3NDY2IDguMDI0NzUgNC45NzQ2NkM4LjAyNDc1IDQuOTc0NjYgNy44MjYwOCAzLjYwMzk5IDguNTQ4NzUgMi44ODEzM0M5LjI3MDc1IDIuMTU5MzMgMTAuNjQyMSAyLjM1ODY2IDEwLjY0MjEgMi4zNTg2NkMxMC42NDIxIDIuMzU4NjYgMTAuODQwNyAzLjcyODY2IDEwLjExODEgNC40NTEzM1pNMi42NjY3NSAxMC4zNzMzQzIuNjY2NzUgMTIuNTYwNyA0LjEzMDc1IDE1LjA3MzMgNS42MTI3NSAxNS42MDQ3QzYuMTI2MDggMTUuNzg4NyA2LjY1NzQxIDE1LjUzNDcgNy4wOTg3NSAxNS4yMThDNy40MzM0MSAxNC45NzggNy44Mzg3NSAxNC43NDkzIDguMTY2NzUgMTQuNzQ5M0M4LjQ5MzQxIDE0Ljc0OTMgOC45MDAwOCAxNC45NzggOS4yMzQwOCAxNS4yMThDOS42NzU0MSAxNS41MzQ3IDEwLjIwNjcgMTUuNzg4NyAxMC43MjA3IDE1LjYwNDdDMTEuNzczNCAxNS4yMjczIDEyLjgxNzQgMTMuODQ5MyAxMy4zMzM0IDEyLjI5OEMxMi4zMzM0IDEyLjAxMTMgMTEuNjA0MSAxMS4xMDczIDExLjYwNDEgMTAuMDM2QzExLjYwNDEgOS4wNTQ2NiAxMi4yMTY3IDguMjEzMzMgMTMuMDg4MSA3Ljg1OTMzQzEyLjUyNjcgNi44NjE5OSAxMS42MDk0IDYuMzMzMzMgMTAuNTcyNyA2LjMzMzMzQzEwLjAzNjcgNi4zMzMzMyA5LjU0MzQxIDYuNTQ5MzMgOS4xNDYwOCA2LjgwODY2QzguNTEwMDggNy4yMjE5OSA3LjgyMjc1IDcuMjIxOTkgNy4xODc0MSA2LjgwODY2QzYuNzg5NDEgNi41NDkzMyA2LjI5Njc1IDYuMzMzMzMgNS43NjA3NSA2LjMzMzMzQzQuMDUxNDEgNi4zMzMzMyAyLjY2Njc1IDcuNzY5OTkgMi42NjY3NSAxMC4zNzMzWiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2U9IiM4OTkxQTkiLz4KPC9zdmc+Cg==', 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTciIHZpZXdCb3g9IjAgMCAxNiAxNyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwLjc5MiAyLjM2MTNDMTAuODY4NiAyLjI0NjQzIDExLjAyMzggMi4yMTUzOSAxMS4xMzg3IDIuMjkxOTZDMTEuMjUzNSAyLjM2ODU1IDExLjI4NDYgMi41MjM3NiAxMS4yMDggMi42Mzg2NEwxMC40MjE5IDMuODE3MzVDMTEuMzgwNyA0LjU0ODA4IDEyIDUuNzAxNDEgMTIgNi45OTk5N1YxMi41TDExLjk5MDIgMTIuNjAwNkMxMS45NDM3IDEyLjgyODUgMTEuNzQxNyAxMyAxMS41IDEzVjE0LjVDMTEuNSAxNS4zMjg0IDEwLjgyODQgMTYgMTAgMTZDOS4xNzE1NyAxNiA4LjUgMTUuMzI4NCA4LjUgMTQuNVYxM0g3LjVWMTQuNUM3LjUgMTUuMzI4NCA2LjgyODQzIDE2IDYgMTZDNS4xNzE1NyAxNiA0LjUgMTUuMzI4NCA0LjUgMTQuNVYxM0w0LjM5OTQxIDEyLjk5MDJDNC4yMDM5MiAxMi45NTAzIDQuMDQ5NjYgMTIuNzk2IDQuMDA5NzcgMTIuNjAwNkw0IDEyLjVWNi45OTk5N0M0LjAwMDAxIDUuNzAxNjkgNC42MTg3IDQuNTQ4MTEgNS41NzcxNSAzLjgxNzM1TDQuNzkxOTkgMi42Mzg2NEM0LjcxNTQyIDIuNTIzNzYgNC43NDY0NSAyLjM2ODU1IDQuODYxMzMgMi4yOTE5NkM0Ljk3NjIgMi4yMTUzOSA1LjEzMTQyIDIuMjQ2NDMgNS4yMDgwMSAyLjM2MTNMNS45OTMxNiAzLjUzOTAzQzYuNTgzMDUgMy4xOTYyNSA3LjI2ODYxIDIuOTk5OTcgOCAyLjk5OTk3QzguNzMxMDkgMi45OTk5NyA5LjQxNjE0IDMuMTk2NTEgMTAuMDA1OSAzLjUzOTAzTDEwLjc5MiAyLjM2MTNaTTUgMTJINS41VjE0LjVDNS41IDE0Ljc3NjEgNS43MjM4NiAxNSA2IDE1QzYuMjc2MTQgMTUgNi41IDE0Ljc3NjEgNi41IDE0LjVWMTJIOS41VjE0LjVDOS41IDE0Ljc3NjEgOS43MjM4NiAxNSAxMCAxNUMxMC4yNzYxIDE1IDEwLjUgMTQuNzc2MSAxMC41IDE0LjVWMTJIMTFWNi45OTk5N0g1VjEyWk0zIDYuNDk5OTdDMy4yNzYxNCA2LjQ5OTk3IDMuNSA2LjcyMzgzIDMuNSA2Ljk5OTk3VjExLjVDMy41IDExLjc3NjEgMy4yNzYxNCAxMiAzIDEyQzIuNzIzODYgMTIgMi41IDExLjc3NjEgMi41IDExLjVWNi45OTk5N0MyLjUgNi43MjM4MyAyLjcyMzg2IDYuNDk5OTcgMyA2LjQ5OTk3Wk0xMyA2LjQ5OTk3QzEzLjI3NjEgNi40OTk5NyAxMy41IDYuNzIzODMgMTMuNSA2Ljk5OTk3VjExLjVDMTMuNSAxMS43NzYxIDEzLjI3NjEgMTIgMTMgMTJDMTIuNzIzOSAxMiAxMi41IDExLjc3NjEgMTIuNSAxMS41VjYuOTk5OTdDMTIuNSA2LjcyMzgzIDEyLjcyMzkgNi40OTk5NyAxMyA2LjQ5OTk3Wk04IDMuOTk5OTdDNi42OTQxNiAzLjk5OTk3IDUuNTg1OTUgNC44MzUzIDUuMTczODMgNS45OTk5N0gxMC44MjYyQzEwLjQxNDEgNC44MzUzIDkuMzA1ODQgMy45OTk5NyA4IDMuOTk5OTdaTTYuODc1IDQuNzQ5OTdDNy4wODIxIDQuNzQ5OTcgNy4yNDk5OSA0LjkxNzg4IDcuMjUgNS4xMjQ5N0M3LjI1IDUuMzMyMDggNy4wODIxMSA1LjQ5OTk3IDYuODc1IDUuNDk5OTdDNi42Njc4OSA1LjQ5OTk3IDYuNSA1LjMzMjA4IDYuNSA1LjEyNDk3QzYuNTAwMDEgNC45MTc4OCA2LjY2NzkgNC43NDk5NyA2Ljg3NSA0Ljc0OTk3Wk05LjEyNSA0Ljc0OTk3QzkuMzMyMTEgNC43NDk5NyA5LjUgNC45MTc4NiA5LjUgNS4xMjQ5N0M5LjUgNS4zMzIwOCA5LjMzMjExIDUuNDk5OTcgOS4xMjUgNS40OTk5N0M4LjkxNzg5IDUuNDk5OTcgOC43NSA1LjMzMjA4IDguNzUgNS4xMjQ5N0M4Ljc1IDQuOTE3ODYgOC45MTc4OSA0Ljc0OTk3IDkuMTI1IDQuNzQ5OTdaIiBmaWxsPSIjODk5MUE5Ii8+Cjwvc3ZnPgo='].forEach(function (src, index) {
+  const label = window.demoFrame.panel.querySelectorAll('.df-team__label')[index];
+  const name = label.textContent;
+  const icon = document.createElement('img');
+  icon.src = src;
+  icon.alt = name;
+  icon.width = 16;
+  icon.height = index === 0 ? 16 : 17;
+  label.title = name;
+  label.replaceChildren(icon);
+});
+
+// Show all developers as rows in one shared card.
+const developers = Array.from(window.demoFrame.panel.querySelectorAll('.df-team')).slice(1);
+const developerCard = document.createElement('div');
+developerCard.className = 'demo-developers';
+developerCard.setAttribute('role', 'group');
+developerCard.setAttribute('aria-label', 'Разработчики');
+developers[0].before(developerCard);
+developers.forEach(function (row) { developerCard.appendChild(row); });
 </script></body></html>
