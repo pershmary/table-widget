@@ -12,6 +12,7 @@
   --doc-width: 820px;
   --first-col: 235px;
   --accent: #7b62f8;            /* Border/info_border-color */
+  --selection-bg: rgba(123, 98, 248, .2); /* info_border-color 20% */
   --on-accent: #ffffff;         /* Icon/contrast_icon-color */
   --btn-dot-bg: #ffffff;        /* Background/background-color */
   --handle-bg: #eaeaea;         /* Border/border-color */
@@ -1071,24 +1072,23 @@ html.tw-resizing * { cursor: col-resize !important; user-select: none; }
 .tw-bd-layer { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 1; pointer-events: none; }
 .tw-bd-line { position: absolute; box-sizing: border-box; }
 
-/* Выделение строки/столбца по клику на хэндлер: фиолетовая рамка 1px вплотную снаружи к линиям ячеек */
+/* Выделение ячеек: полупрозрачная заливка поверх содержимого, без обводки. */
 .tw-sel {
   position: absolute;
   z-index: 1;
   box-sizing: border-box;
-  border: 1px solid var(--accent);
+  border: 0;
+  background: var(--selection-bg);
   pointer-events: none;
 }
 .tw-sel[hidden] { display: none; }
 
 /* Обводки виджета «Таблица» (правила обводок виджетов): вплотную снаружи к рамке таблицы, 1px, скругление как у таблицы.
-   Активная — info_border-color, solid (курсор в таблице); мнимая — info_border-color 60%, solid (ховер на таблицу);
-   родительская — info_border-color 60%, dashed 6/3 (активен дочерний виджет — выделен диапазон ячеек). */
+   Активная — info_border-color, solid (курсор или выделение ячеек); мнимая — info_border-color 60%, solid (ховер). */
 .tw-outline { position: absolute; z-index: 4; pointer-events: none; overflow: visible; display: block; }
 .tw-outline[hidden] { display: none; }
 .tw-outline rect { fill: none; stroke: var(--accent); stroke-width: 1px; }
-.tw-outline.is-hover rect, .tw-outline.is-parent rect { stroke: rgba(123, 98, 248, .6); }
-.tw-outline.is-parent rect { stroke-dasharray: 6 3; }
+.tw-outline.is-hover rect { stroke: rgba(123, 98, 248, .6); }
 
 html.tw-dragging,
 html.tw-dragging * { cursor: grabbing !important; user-select: none; }

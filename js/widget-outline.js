@@ -1,8 +1,5 @@
-/* ---------- Обводки виджета «Таблица» ----------
-   Таблица — виджет из ячеек; выделенный диапазон ячеек — её дочерний виджет (его активная обводка — рамка выделения .tw-sel).
-   Таблица активна, когда в ней стоит курсор (и нет выделения) — активная обводка; выделен диапазон — у таблицы родительская
-   обводка; иначе по ховеру на таблицу — мнимая. Обводка лежит в блоке .table-scroll, поэтому едет с таблицей и в окно
-   расширенного режима; у таблицы в скролле — по видимой части. */
+/* Таблица сохраняет активную обводку при курсоре или выделении ячеек.
+   Диапазон ячеек подсвечивается полупрозрачным фоном без собственной обводки. */
 (function () {
   const widget = document.querySelector('.table-widget');
   const scroll = widget.querySelector('.table-scroll');
@@ -20,10 +17,10 @@
 
   function state() {
     if (widget.hidden || document.documentElement.classList.contains('tw-dragging')) return null;
-    // Родительская — только при настоящем выделении (рамка выделения видна); в окне расширенного режима без курсора
+    // Активная — при настоящем выделении (слой выделения виден); в окне расширенного режима без курсора
     // context() отдаёт всю таблицу как диапазон для команд — это не выделение.
     const sel = wrap.querySelector('.tw-sel');
-    if (sel && !sel.hidden) return 'parent';
+    if (sel && !sel.hidden) return 'active';
     const a = document.activeElement;
     const caret = a && table.contains(a) && a.closest('th, td');
     if (caret) return 'active';   // только курсор в ячейке; без курсора и без выделения активной обводки нет
@@ -34,7 +31,6 @@
     raf = 0;
     const st = state();
     svg.classList.toggle('is-hover', st === 'hover');
-    svg.classList.toggle('is-parent', st === 'parent');
     if (!st) { svg.setAttribute('hidden', ''); return; }
     svg.removeAttribute('hidden');
     let anc = scroll;   // ближайший позиционированный предок (у svg нет offsetParent)
