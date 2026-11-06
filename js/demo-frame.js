@@ -7,7 +7,7 @@ demoCanvas.appendChild(demoStage);
 window.demoFrame = DemoFrame.mount({
   stage: demoStage,
   viewport: demoCanvas,
-  panelWidth: 250,
+  panelWidth: 280,
   head: {
     title: 'Виджет “Таблица”',
     version: '27.1100',
