@@ -1634,6 +1634,7 @@
      Хранится в стиле таблицы (--tw-align), поэтому попадает в историю и отменяется Ctrl+Z.
      Сдвиг относительно колонки текста пересчитывается при любом изменении ширины таблицы или колонки. */
   function tableAlign() { return table.style.getPropertyValue('--tw-align').trim() || 'left'; }
+  let expView = null;   // видимая ширина во время анимации: не обрезаем таблицу раньше сужения
   let expAnim = false;   // идёт анимация «Расширить» / «Уменьшить»: ширину и сдвиг ведёт она
   function placeAlign() {
     if (expAnim) return;
@@ -1656,26 +1657,41 @@
   // тулбары, хэндлеры и рамки едут за таблицей каждый кадр.
   const EXPAND_MS = 300;
   function toggleExpand() {
+    const tableW0 = table.getBoundingClientRect().width;
+    const view0 = hscrollView();
     const w0 = wrap.offsetWidth;
     const s0 = parseFloat(widget.style.getPropertyValue('--tw-shift')) || 0;
     change(function () {
-      if (isExpanded()) table.style.removeProperty('--tw-expand'); else table.style.setProperty('--tw-expand', '1');
+      if (isExpanded()) table.style.removeProperty('--tw-expand');
+      else {
+        // Ручная ширина не должна удерживать таблицу внутри расширенного контейнера.
+        table.style.removeProperty('width');
+        table.style.setProperty('--tw-expand', '1');
+      }
     });
     updateMinWidth();
     placeAlign();
     const minF = wrap.style.minWidth, w1 = wrap.offsetWidth;
+    const tableW1 = table.getBoundingClientRect().width;
+    const finalWidth = table.style.width;
+    const view1 = hscrollView();
     const s1 = parseFloat(widget.style.getPropertyValue('--tw-shift')) || 0;
-    if (Math.abs(w1 - w0) < 1 && Math.abs(s1 - s0) < 1) { window.dispatchEvent(new Event('resize')); return; }
+    if (Math.abs(w1 - w0) < 1 && Math.abs(tableW1 - tableW0) < 1 && Math.abs(s1 - s0) < 1) { window.dispatchEvent(new Event('resize')); return; }
     expAnim = true;
     const t0 = performance.now();
     const ease = function (t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; };
     (function frame(now) {
-      const t = Math.min(1, (now - t0) / EXPAND_MS), e = ease(t);
+      const t = Math.max(0, Math.min(1, (now - t0) / EXPAND_MS)), e = ease(t);
+      expView = view0 + (view1 - view0) * e;
       wrap.style.minWidth = (w0 + (w1 - w0) * e) + 'px';
+      // Ручная ширина может отличаться от ширины контейнера: анимируем саму таблицу тоже.
+      table.style.width = (tableW0 + (tableW1 - tableW0) * e) + 'px';
       widget.style.setProperty('--tw-shift', Math.round(s0 + (s1 - s0) * e) + 'px');
       window.dispatchEvent(new Event('resize'));
       if (t < 1) { requestAnimationFrame(frame); return; }
       expAnim = false;
+      expView = null;
+      if (finalWidth) table.style.width = finalWidth; else table.style.removeProperty('width');
       wrap.style.minWidth = minF;
       placeAlign();
       window.dispatchEvent(new Event('resize'));
@@ -1885,7 +1901,7 @@
   widget.appendChild(hbar); widget.appendChild(shR); widget.appendChild(shL);
   let hs = { on: false, s: 0, view: 0, content: 0, left: 0 };
   // Видимая ширина таблицы: колонка текста, у расширенной — ширина расширения (и в окне расширенного режима).
-  function hscrollView() { return isExpanded() ? expandedWidth() : widget.getBoundingClientRect().width; }
+  function hscrollView() { return expAnim && expView !== null ? expView : isExpanded() ? expandedWidth() : widget.getBoundingClientRect().width; }
   function syncHScroll() {
     if (!hsReady) return;
     const wr = widget.getBoundingClientRect();

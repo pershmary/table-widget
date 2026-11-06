@@ -3447,6 +3447,30 @@ html .twin-head:has(&gt; .twin-back) { padding-left: 8px !important; column-gap:
 const Toolbar = (function () {
   const WINDOW_GAP = 4;   // расстояние между тулбаром и окном, которое открывает его кнопка
   const OBJECT_WINDOW_GAP = 8;   // окно настройки объекта — на 8px правее объекта
+  // Координаты внутри iframe совпадают с границами сцены, а не всей страницы demo-frame.
+  function fitWindowToScene(win) {
+    if (!win || win.hidden || !win.getClientRects().length) return;
+    const width = document.documentElement.clientWidth, height = document.documentElement.clientHeight;
+    const r = win.getBoundingClientRect();
+    const dx = Math.max(0, Math.min(r.left, width - r.width)) - r.left;
+    const dy = Math.max(0, Math.min(r.top, height - r.height)) - r.top;
+    if (Math.abs(dx) &gt; .01) win.style.left = ((parseFloat(win.style.left) || 0) + dx) + &#x27;px&#x27;;
+    if (Math.abs(dy) &gt; .01) win.style.top = ((parseFloat(win.style.top) || 0) + dy) + &#x27;px&#x27;;
+  }
+  window.fitWindowToScene = fitWindowToScene;
+  let fitRaf = 0;
+  function fitOpenWindows() {
+    if (fitRaf) return;
+    fitRaf = requestAnimationFrame(function () {
+      fitRaf = 0;
+      document.querySelectorAll(&#x27;.twin, .tw-split&#x27;).forEach(fitWindowToScene);
+    });
+  }
+  new MutationObserver(fitOpenWindows).observe(document.body, {
+    childList: true, subtree: true, attributes: true, attributeFilter: [&#x27;hidden&#x27;, &#x27;style&#x27;, &#x27;class&#x27;]
+  });
+  window.addEventListener(&#x27;resize&#x27;, fitOpenWindows);
+  window.addEventListener(&#x27;scroll&#x27;, fitOpenWindows, true);
   // Меню: иконки пунктов и иконка вызывающей кнопки — на одной вертикальной оси (по центру иконок).
   // Только для меню (у окон команд — свои правила): иконки берутся из пунктов самого меню, не из вложенных списков.
   function alignMenuIcons(win, btn) {
@@ -3583,8 +3607,9 @@ const Toolbar = (function () {
             // Не помещается справа — сдвигаем внутрь экрана (8px от края окна браузера).
             const vw = document.documentElement.clientWidth;
             let x = a.right + OBJECT_WINDOW_GAP;
-            x = Math.max(OBJECT_WINDOW_GAP, Math.min(x, vw - win.offsetWidth - OBJECT_WINDOW_GAP));
+            x = Math.max(0, Math.min(x, vw - win.offsetWidth));
             win.style.left = (x - c.left) + &#x27;px&#x27;;
+            fitWindowToScene(win);
             return;
           }
         }
@@ -3596,11 +3621,13 @@ const Toolbar = (function () {
         if (o &amp;&amp; o.dx !== null) {   // на месте меню, из которого вызвано окно
           win.style.left = (b.left + o.dx - c.left) + &#x27;px&#x27;;
           win.hidden = false;
+          fitWindowToScene(win);
           return;
         }
         win.style.left = (b.left - c.left) + &#x27;px&#x27;;
         win.hidden = false;
         alignMenuIcons(win, btn);
+        fitWindowToScene(win);
       }
     });
     return host;
@@ -5244,6 +5271,7 @@ const Toolbar = (function () {
      Хранится в стиле таблицы (--tw-align), поэтому попадает в историю и отменяется Ctrl+Z.
      Сдвиг относительно колонки текста пересчитывается при любом изменении ширины таблицы или колонки. */
   function tableAlign() { return table.style.getPropertyValue(&#x27;--tw-align&#x27;).trim() || &#x27;left&#x27;; }
+  let expView = null;   // видимая ширина во время анимации: не обрезаем таблицу раньше сужения
   let expAnim = false;   // идёт анимация «Расширить» / «Уменьшить»: ширину и сдвиг ведёт она
   function placeAlign() {
     if (expAnim) return;
@@ -5266,26 +5294,41 @@ const Toolbar = (function () {
   // тулбары, хэндлеры и рамки едут за таблицей каждый кадр.
   const EXPAND_MS = 300;
   function toggleExpand() {
+    const tableW0 = table.getBoundingClientRect().width;
+    const view0 = hscrollView();
     const w0 = wrap.offsetWidth;
     const s0 = parseFloat(widget.style.getPropertyValue(&#x27;--tw-shift&#x27;)) || 0;
     change(function () {
-      if (isExpanded()) table.style.removeProperty(&#x27;--tw-expand&#x27;); else table.style.setProperty(&#x27;--tw-expand&#x27;, &#x27;1&#x27;);
+      if (isExpanded()) table.style.removeProperty(&#x27;--tw-expand&#x27;);
+      else {
+        // Ручная ширина не должна удерживать таблицу внутри расширенного контейнера.
+        table.style.removeProperty(&#x27;width&#x27;);
+        table.style.setProperty(&#x27;--tw-expand&#x27;, &#x27;1&#x27;);
+      }
     });
     updateMinWidth();
     placeAlign();
     const minF = wrap.style.minWidth, w1 = wrap.offsetWidth;
+    const tableW1 = table.getBoundingClientRect().width;
+    const finalWidth = table.style.width;
+    const view1 = hscrollView();
     const s1 = parseFloat(widget.style.getPropertyValue(&#x27;--tw-shift&#x27;)) || 0;
-    if (Math.abs(w1 - w0) &lt; 1 &amp;&amp; Math.abs(s1 - s0) &lt; 1) { window.dispatchEvent(new Event(&#x27;resize&#x27;)); return; }
+    if (Math.abs(w1 - w0) &lt; 1 &amp;&amp; Math.abs(tableW1 - tableW0) &lt; 1 &amp;&amp; Math.abs(s1 - s0) &lt; 1) { window.dispatchEvent(new Event(&#x27;resize&#x27;)); return; }
     expAnim = true;
     const t0 = performance.now();
     const ease = function (t) { return t &lt; 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; };
     (function frame(now) {
-      const t = Math.min(1, (now - t0) / EXPAND_MS), e = ease(t);
+      const t = Math.max(0, Math.min(1, (now - t0) / EXPAND_MS)), e = ease(t);
+      expView = view0 + (view1 - view0) * e;
       wrap.style.minWidth = (w0 + (w1 - w0) * e) + &#x27;px&#x27;;
+      // Ручная ширина может отличаться от ширины контейнера: анимируем саму таблицу тоже.
+      table.style.width = (tableW0 + (tableW1 - tableW0) * e) + &#x27;px&#x27;;
       widget.style.setProperty(&#x27;--tw-shift&#x27;, Math.round(s0 + (s1 - s0) * e) + &#x27;px&#x27;);
       window.dispatchEvent(new Event(&#x27;resize&#x27;));
       if (t &lt; 1) { requestAnimationFrame(frame); return; }
       expAnim = false;
+      expView = null;
+      if (finalWidth) table.style.width = finalWidth; else table.style.removeProperty(&#x27;width&#x27;);
       wrap.style.minWidth = minF;
       placeAlign();
       window.dispatchEvent(new Event(&#x27;resize&#x27;));
@@ -5495,7 +5538,7 @@ const Toolbar = (function () {
   widget.appendChild(hbar); widget.appendChild(shR); widget.appendChild(shL);
   let hs = { on: false, s: 0, view: 0, content: 0, left: 0 };
   // Видимая ширина таблицы: колонка текста, у расширенной — ширина расширения (и в окне расширенного режима).
-  function hscrollView() { return isExpanded() ? expandedWidth() : widget.getBoundingClientRect().width; }
+  function hscrollView() { return expAnim &amp;&amp; expView !== null ? expView : isExpanded() ? expandedWidth() : widget.getBoundingClientRect().width; }
   function syncHScroll() {
     if (!hsReady) return;
     const wr = widget.getBoundingClientRect();
@@ -7330,7 +7373,7 @@ const TableWindows = (function () {
         const sr = sw.getBoundingClientRect(), er = hdrWin.querySelector(&#x27;.twin-current&#x27;).getBoundingClientRect();
         let dx = sr.left - er.left;
         // Не выходит за правый край экрана (отступ 20px): тогда окно сдвигается влево, вертикальное совпадение сохраняется.
-        const hr = hdrWin.getBoundingClientRect(), maxRight = document.documentElement.clientWidth - 20;
+        const hr = hdrWin.getBoundingClientRect(), maxRight = document.documentElement.clientWidth;
         if (hr.right + dx &gt; maxRight) dx = maxRight - hr.right;
         hdrWin.style.left = dx + &#x27;px&#x27;;
         hdrWin.style.top = (sr.top + sr.height / 2 - (er.top + er.height / 2)) + &#x27;px&#x27;;
@@ -7501,7 +7544,7 @@ const TableWindows = (function () {
       colorWin.style.left = &#x27;0px&#x27;; colorWin.style.top = &#x27;0px&#x27;;
       const sr = sw.getBoundingClientRect(), er = colorWin.querySelector(&#x27;.twin-current&#x27;).getBoundingClientRect();
       let dx = sr.left - er.left;
-      const hr = colorWin.getBoundingClientRect(), maxRight = document.documentElement.clientWidth - 20;
+      const hr = colorWin.getBoundingClientRect(), maxRight = document.documentElement.clientWidth;
       if (hr.right + dx &gt; maxRight) dx = maxRight - hr.right;
       colorWin.style.left = dx + &#x27;px&#x27;;
       colorWin.style.top = (sr.top + sr.height / 2 - (er.top + er.height / 2)) + &#x27;px&#x27;;
@@ -7590,7 +7633,7 @@ const TableWindows = (function () {
       fillWin.style.left = &#x27;0px&#x27;; fillWin.style.top = &#x27;0px&#x27;;
       const sr = sw.getBoundingClientRect(), er = fillWin.querySelector(&#x27;.twin-current&#x27;).getBoundingClientRect();
       let dx = sr.left - er.left;
-      const hr = fillWin.getBoundingClientRect(), maxRight = document.documentElement.clientWidth - 20;
+      const hr = fillWin.getBoundingClientRect(), maxRight = document.documentElement.clientWidth;
       if (hr.right + dx &gt; maxRight) dx = maxRight - hr.right;
       fillWin.style.left = dx + &#x27;px&#x27;;
       fillWin.style.top = (sr.top + sr.height / 2 - (er.top + er.height / 2)) + &#x27;px&#x27;;
@@ -7864,12 +7907,12 @@ const TableWindows = (function () {
   // Текущее значение для подменю-радио.
   const SUBMENU_VALUE = { &#x27;Положение в тексте&#x27;: function () { return TableAPI.tableAlign(); } };
   // Меню таблицы (тулбар ячейки; в окне расширенного режима — когда курсор в ячейке) — по образцу Figma 769:6069.
-  // «Разделить» подписано «Разделить ячейку», «Удалить таблицу» — «Удалить» со стрелкой подменю.
-  // Во всех меню «Настроить ячейку / ячейки» — сразу после «Границы».
-  // «Настроить таблицу» и «Настроить ячейку» слиты в одну команду «Настроить» с подменю «Таблицу» / «Ячейку» (окна настройки таблицы / ячейки).
+  // «Настроить» открывает настройки таблицы, «Удалить» удаляет таблицу напрямую,
+  // как в группе «Таблица» расширенного режима; оба пункта без подменю.
   const TABLE_MENU = { include: [&#x27;Добавить столбец/строку&#x27;, &#x27;Сдвинуть столбец/строку&#x27;, &#x27;Фон&#x27;, &#x27;Стиль текста&#x27;, &#x27;Границы&#x27;,
     &#x27;Разделить&#x27;, &#x27;Выровнять столбцы&#x27;, &#x27;Расширить&#x27;, &#x27;Положение в тексте&#x27;, &#x27;Расширенный режим&#x27;, &#x27;Настроить&#x27;, &#x27;Удалить таблицу&#x27;],   // «Выровнять столбцы» — после «Разделить ячейку»
-    rename: { &#x27;Разделить&#x27;: &#x27;Разделить ячейку&#x27;, &#x27;Удалить таблицу&#x27;: &#x27;Удалить&#x27; }, sub: [&#x27;Удалить таблицу&#x27;] };
+    rename: { &#x27;Разделить&#x27;: &#x27;Разделить ячейку&#x27;, &#x27;Удалить таблицу&#x27;: &#x27;Удалить&#x27; },
+    noSub: [&#x27;Настроить&#x27;], cmdName: { &#x27;Настроить&#x27;: &#x27;Настроить таблицу&#x27; } };
   // Меню строки / нескольких строк (тулбар «Строки»): свой состав и порядок; «Удалить строку» подписано «Удалить».
   // Состав — по образцу Figma 769:6828; в конце меню нет стрелки вниз.
   // «Настроить ячейки» — после «Очистить ячейки» (во всех меню диапазонов).
@@ -7975,11 +8018,12 @@ const TableWindows = (function () {
       const wr = w.getBoundingClientRect(), sw = sm.getBoundingClientRect().width;
       let x = wr.width - 1;
       // Не помещается справа — открываем слева от меню (тоже с заходом на 1px).
-      if (wr.left + x + sw &gt; document.documentElement.clientWidth - 8) x = -sw + 1;
+      if (wr.left + x + sw &gt; document.documentElement.clientWidth) x = document.documentElement.clientWidth - wr.left - sw;
       sm.style.left = x + &#x27;px&#x27;;
       sm.style.top = &#x27;0px&#x27;;
       const pt = it.querySelector(&#x27;.twin-mn-text&#x27;), st = sm.querySelector(&#x27;.twin-mn-text&#x27;);
       sm.style.top = (baseline(pt) - baseline(st)) + &#x27;px&#x27;;
+      fitWindowToScene(sm);
       it.classList.add(&#x27;is-open&#x27;);
       if (closeBtn) {
         const c = closeBtn.getBoundingClientRect(), r = sm.getBoundingClientRect();

@@ -706,7 +706,7 @@ const TableWindows = (function () {
         const sr = sw.getBoundingClientRect(), er = hdrWin.querySelector('.twin-current').getBoundingClientRect();
         let dx = sr.left - er.left;
         // Не выходит за правый край экрана (отступ 20px): тогда окно сдвигается влево, вертикальное совпадение сохраняется.
-        const hr = hdrWin.getBoundingClientRect(), maxRight = document.documentElement.clientWidth - 20;
+        const hr = hdrWin.getBoundingClientRect(), maxRight = document.documentElement.clientWidth;
         if (hr.right + dx > maxRight) dx = maxRight - hr.right;
         hdrWin.style.left = dx + 'px';
         hdrWin.style.top = (sr.top + sr.height / 2 - (er.top + er.height / 2)) + 'px';
@@ -877,7 +877,7 @@ const TableWindows = (function () {
       colorWin.style.left = '0px'; colorWin.style.top = '0px';
       const sr = sw.getBoundingClientRect(), er = colorWin.querySelector('.twin-current').getBoundingClientRect();
       let dx = sr.left - er.left;
-      const hr = colorWin.getBoundingClientRect(), maxRight = document.documentElement.clientWidth - 20;
+      const hr = colorWin.getBoundingClientRect(), maxRight = document.documentElement.clientWidth;
       if (hr.right + dx > maxRight) dx = maxRight - hr.right;
       colorWin.style.left = dx + 'px';
       colorWin.style.top = (sr.top + sr.height / 2 - (er.top + er.height / 2)) + 'px';
@@ -966,7 +966,7 @@ const TableWindows = (function () {
       fillWin.style.left = '0px'; fillWin.style.top = '0px';
       const sr = sw.getBoundingClientRect(), er = fillWin.querySelector('.twin-current').getBoundingClientRect();
       let dx = sr.left - er.left;
-      const hr = fillWin.getBoundingClientRect(), maxRight = document.documentElement.clientWidth - 20;
+      const hr = fillWin.getBoundingClientRect(), maxRight = document.documentElement.clientWidth;
       if (hr.right + dx > maxRight) dx = maxRight - hr.right;
       fillWin.style.left = dx + 'px';
       fillWin.style.top = (sr.top + sr.height / 2 - (er.top + er.height / 2)) + 'px';
@@ -1240,12 +1240,12 @@ const TableWindows = (function () {
   // Текущее значение для подменю-радио.
   const SUBMENU_VALUE = { 'Положение в тексте': function () { return TableAPI.tableAlign(); } };
   // Меню таблицы (тулбар ячейки; в окне расширенного режима — когда курсор в ячейке) — по образцу Figma 769:6069.
-  // «Разделить» подписано «Разделить ячейку», «Удалить таблицу» — «Удалить» со стрелкой подменю.
-  // Во всех меню «Настроить ячейку / ячейки» — сразу после «Границы».
-  // «Настроить таблицу» и «Настроить ячейку» слиты в одну команду «Настроить» с подменю «Таблицу» / «Ячейку» (окна настройки таблицы / ячейки).
+  // «Настроить» открывает настройки таблицы, «Удалить» удаляет таблицу напрямую,
+  // как в группе «Таблица» расширенного режима; оба пункта без подменю.
   const TABLE_MENU = { include: ['Добавить столбец/строку', 'Сдвинуть столбец/строку', 'Фон', 'Стиль текста', 'Границы',
     'Разделить', 'Выровнять столбцы', 'Расширить', 'Положение в тексте', 'Расширенный режим', 'Настроить', 'Удалить таблицу'],   // «Выровнять столбцы» — после «Разделить ячейку»
-    rename: { 'Разделить': 'Разделить ячейку', 'Удалить таблицу': 'Удалить' }, sub: ['Удалить таблицу'] };
+    rename: { 'Разделить': 'Разделить ячейку', 'Удалить таблицу': 'Удалить' },
+    noSub: ['Настроить'], cmdName: { 'Настроить': 'Настроить таблицу' } };
   // Меню строки / нескольких строк (тулбар «Строки»): свой состав и порядок; «Удалить строку» подписано «Удалить».
   // Состав — по образцу Figma 769:6828; в конце меню нет стрелки вниз.
   // «Настроить ячейки» — после «Очистить ячейки» (во всех меню диапазонов).
@@ -1351,11 +1351,12 @@ const TableWindows = (function () {
       const wr = w.getBoundingClientRect(), sw = sm.getBoundingClientRect().width;
       let x = wr.width - 1;
       // Не помещается справа — открываем слева от меню (тоже с заходом на 1px).
-      if (wr.left + x + sw > document.documentElement.clientWidth - 8) x = -sw + 1;
+      if (wr.left + x + sw > document.documentElement.clientWidth) x = document.documentElement.clientWidth - wr.left - sw;
       sm.style.left = x + 'px';
       sm.style.top = '0px';
       const pt = it.querySelector('.twin-mn-text'), st = sm.querySelector('.twin-mn-text');
       sm.style.top = (baseline(pt) - baseline(st)) + 'px';
+      fitWindowToScene(sm);
       it.classList.add('is-open');
       if (closeBtn) {
         const c = closeBtn.getBoundingClientRect(), r = sm.getBoundingClientRect();

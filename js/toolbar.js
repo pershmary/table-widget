@@ -7,6 +7,30 @@
 const Toolbar = (function () {
   const WINDOW_GAP = 4;   // расстояние между тулбаром и окном, которое открывает его кнопка
   const OBJECT_WINDOW_GAP = 8;   // окно настройки объекта — на 8px правее объекта
+  // Координаты внутри iframe совпадают с границами сцены, а не всей страницы demo-frame.
+  function fitWindowToScene(win) {
+    if (!win || win.hidden || !win.getClientRects().length) return;
+    const width = document.documentElement.clientWidth, height = document.documentElement.clientHeight;
+    const r = win.getBoundingClientRect();
+    const dx = Math.max(0, Math.min(r.left, width - r.width)) - r.left;
+    const dy = Math.max(0, Math.min(r.top, height - r.height)) - r.top;
+    if (Math.abs(dx) > .01) win.style.left = ((parseFloat(win.style.left) || 0) + dx) + 'px';
+    if (Math.abs(dy) > .01) win.style.top = ((parseFloat(win.style.top) || 0) + dy) + 'px';
+  }
+  window.fitWindowToScene = fitWindowToScene;
+  let fitRaf = 0;
+  function fitOpenWindows() {
+    if (fitRaf) return;
+    fitRaf = requestAnimationFrame(function () {
+      fitRaf = 0;
+      document.querySelectorAll('.twin, .tw-split').forEach(fitWindowToScene);
+    });
+  }
+  new MutationObserver(fitOpenWindows).observe(document.body, {
+    childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'style', 'class']
+  });
+  window.addEventListener('resize', fitOpenWindows);
+  window.addEventListener('scroll', fitOpenWindows, true);
   // Меню: иконки пунктов и иконка вызывающей кнопки — на одной вертикальной оси (по центру иконок).
   // Только для меню (у окон команд — свои правила): иконки берутся из пунктов самого меню, не из вложенных списков.
   function alignMenuIcons(win, btn) {
@@ -143,8 +167,9 @@ const Toolbar = (function () {
             // Не помещается справа — сдвигаем внутрь экрана (8px от края окна браузера).
             const vw = document.documentElement.clientWidth;
             let x = a.right + OBJECT_WINDOW_GAP;
-            x = Math.max(OBJECT_WINDOW_GAP, Math.min(x, vw - win.offsetWidth - OBJECT_WINDOW_GAP));
+            x = Math.max(0, Math.min(x, vw - win.offsetWidth));
             win.style.left = (x - c.left) + 'px';
+            fitWindowToScene(win);
             return;
           }
         }
@@ -156,11 +181,13 @@ const Toolbar = (function () {
         if (o && o.dx !== null) {   // на месте меню, из которого вызвано окно
           win.style.left = (b.left + o.dx - c.left) + 'px';
           win.hidden = false;
+          fitWindowToScene(win);
           return;
         }
         win.style.left = (b.left - c.left) + 'px';
         win.hidden = false;
         alignMenuIcons(win, btn);
+        fitWindowToScene(win);
       }
     });
     return host;
