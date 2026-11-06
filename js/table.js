@@ -2145,10 +2145,11 @@
     mergeCells: function (ctx) {
       const merged = activeMergedCell(ctx);
       if (merged) {
-        // Повторное нажатие — разделить объединённую ячейку.
+        // Повторное нажатие — разделить ячейку, сохранив выделение всего её диапазона.
+        const p = gridPos(merged);
+        const range = { r1: p.r, c1: p.c, r2: p.r + p.rspan - 1, c2: p.c + p.span - 1 };
         change(function () { splitCell(merged); });
-        clearSelection();
-        focusCell(merged);
+        select('range', range);
         return;
       }
       if (!ctx || ctx.kind !== 'range' || !canMerge(ctx.range)) return;
