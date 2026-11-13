@@ -2277,8 +2277,47 @@
     return { fontWeight: f.bold ? '600' : '400', fontStyle: f.italic ? 'italic' : 'normal' };
   }
 
+  // Нативное выделение текста внутри одной редактируемой ячейки, отдельно от диапазона ячеек.
+  function selectedTextRange() {
+    const sel = window.getSelection();
+    if (selection || !sel.rangeCount || sel.isCollapsed) return null;
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    const cell = (node.nodeType === 1 ? node : node.parentElement).closest('th, td');
+    if (!cell || !table.contains(cell) || !cell.contains(range.endContainer) || !range.toString()) return null;
+    return range.cloneRange();
+  }
+  const FMT_COMMANDS = { bold: 'bold', italic: 'italic', underline: 'underline', strike: 'strikeThrough' };
+  // Ячейки остаются plaintext-only для вставки. Только команда форматирования временно включает rich text.
+  function withRichText(fn) {
+    const range = selectedTextRange();
+    if (!range) return;
+    const node = range.startContainer;
+    const cell = (node.nodeType === 1 ? node : node.parentElement).closest('th, td');
+    const editable = cell.contentEditable;
+    cell.contentEditable = 'true';
+    try { return fn(); } finally { cell.contentEditable = editable; }
+  }
+  function selectedTextFormat() {
+    return withRichText(function () {
+      const fmt = {};
+      FMT_KEYS.forEach(function (key) { fmt[key] = document.queryCommandState(FMT_COMMANDS[key]); });
+      return fmt;
+    });
+  }
+  function runTextCommand(command, value) {
+    return withRichText(function () { return document.execCommand(command, false, value); });
+  }
+  function formatSelectedText(command, value) {
+    if (!selectedTextRange()) return;
+    if (['bold', 'italic', 'underline', 'strikeThrough', 'foreColor', 'hiliteColor', 'createLink', 'unlink', 'removeFormat'].indexOf(command) < 0) return;
+    change(function () { runTextCommand(command, value); });
+    table.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
   // Формат активного элемента: значение ключа true, если так оформлен весь текст.
   function activeTextFormat() {
+    if (selectedTextRange()) return selectedTextFormat();
     const ctx = context();
     if (!ctx) return null;
     if (ctx.kind === 'cell') {
@@ -2305,6 +2344,15 @@
   function applyTextFormat(fmt, keys) {
     const ctx = context();
     if (!ctx || !keys || !keys.length) return;
+    if (selectedTextRange()) {
+      change(function () {
+        keys.forEach(function (key) {
+          if (selectedTextFormat()[key] !== fmt[key]) runTextCommand(FMT_COMMANDS[key]);
+        });
+      });
+      table.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
+    }
     if (ctx.kind === 'cell') { setPendingFormat(ctx.cell, fmt); return; }
     applyCellsFormat(activeCells(ctx), fmt, keys);
   }
@@ -2407,6 +2455,8 @@
 
   window.TableAPI = {
     context: context,
+    selectedTextRange: selectedTextRange,
+    formatSelectedText: formatSelectedText,
     columnCount: columnCount,
     // Диапазон R — одна ячейка (в т. ч. объединённая)?
     isSingleCellRange: function (R) {
@@ -2703,6 +2753,7 @@
     activeBox: activeBox,
     // Поставить тулбар (созданный с container: #tw-wrap) над активным элементом.
     placeToolbar: function (tb) {
+      if (selectedTextRange()) { tb.hide(); return; }
       const box = activeBox();
       if (!box) { tb.hide(); return; }
       tb.el.style.visibility = 'hidden';

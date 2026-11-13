@@ -62,7 +62,7 @@ const Toolbar = (function () {
       if (item.toggle || item.arrow) b.setAttribute('aria-pressed', item.pressed ? 'true' : 'false');
       let html = '<span class="tb-btn-inner">';
       if (item.svg) html += item.svg;
-      else html += '<span class="tw-icon tw-icon--24 tb-icon' + (item.centered ? ' tb-icon--centered' : '') +
+      else if (item.icon) html += '<span class="tw-icon tw-icon--24 tb-icon' + (item.centered ? ' tb-icon--centered' : '') +
         '" aria-hidden="true">' + item.icon + '</span>';
       if (item.text) html += '<span class="tb-text">' + item.text + '</span>';
       if (item.label) { html += '<span class="tb-label">' + item.label + '</span>'; b.classList.add('tb-btn--label'); }   // подпись как у кнопок тулбара окна расширенного режима

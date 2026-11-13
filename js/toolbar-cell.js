@@ -15,6 +15,7 @@
   let raf = 0;
   function update() {
     raf = 0;
+    if (TableAPI.selectedTextRange()) { cellToolbar.hide(); return; }
     // Фокус в поле ввода открытого окна тулбара (например, «Отступы») — тулбар и окно остаются на месте.
     if (cellToolbar.openWin && cellToolbar.openWin.win.contains(document.activeElement)) return;
     const ctx = TableAPI.context();
@@ -30,6 +31,7 @@
   table.addEventListener('focusout', schedule);
   document.addEventListener('focusout', function (e) { if (cellToolbar.openWin && cellToolbar.openWin.win.contains(e.target)) schedule(); });   // ушли из поля окна
   table.addEventListener('tw:selection', schedule);
+  document.addEventListener('selectionchange', schedule);
   table.addEventListener('input', schedule);                  // строка выросла — тулбар следом
   new ResizeObserver(schedule).observe(table);
   new MutationObserver(schedule).observe(table, { childList: true, subtree: true, attributes: true, attributeFilter: ['colspan', 'rowspan', 'style'] });

@@ -2629,6 +2629,9 @@ html.app-scrolled .app-tshadow::after { opacity: 1; }
   outline: none;                /* отдельного состояния фокуса ячейки в макете пока нет */
 }
 
+/* Нативное выделение текста, включая вложенные элементы с форматированием. */
+.tw ::selection { background-color: var(--selection-bg); color: inherit; }
+
 /* Пустая ячейка с курсором — плейсхолдер «Введите текст» (цвет placeholder-color_inputText) */
 .tw td.is-ph, .tw th.is-ph { position: relative; }
 .tw td.is-ph::before, .tw th.is-ph::before { content: &quot;Введите текст&quot;; position: absolute; left: 8px; top: 8px; right: 8px;
@@ -3364,6 +3367,17 @@ html .twin:not(.twin--menu):not(.twin--bdcolor):not(.twin--fill) .twin-head:not(
 html .twin-head &gt; .twin-back { margin-left: 0 !important; margin-right: 6px !important; }
 html .twin-head &gt; .twin-back + .twin-title { padding-left: 0 !important; margin-left: 0 !important; }
 html .twin-head:has(&gt; .twin-back) { padding-left: 8px !important; column-gap: 0 !important; }
+
+/* Текстовый плавающий тулбар: разделители из Figma 3813:297664. */
+:root { --text-toolbar-separator: rgba(0, 0, 0, .04); }
+.tb--text { max-width: 100vw; box-sizing: border-box; overflow-x: auto; }
+.tb--text .tb-btn { flex: none; }
+.tb--text .tb-sep { background: var(--text-toolbar-separator); }
+html.tw-in-window #tw-wrap &gt; .tb--text:not([hidden]) { display: flex !important; }
+html.tw-in-window #tw-wrap &gt; .twin--text-toolbar:not([hidden]) { display: block !important; }
+.twin--text { padding: 12px; }
+.twin--text label { display: flex; align-items: center; gap: 8px; font: inherit; }
+.twin--text input { font: inherit; }
 &lt;/style&gt;
 &lt;/head&gt;
 &lt;body&gt;
@@ -3502,7 +3516,7 @@ const Toolbar = (function () {
       if (item.toggle || item.arrow) b.setAttribute(&#x27;aria-pressed&#x27;, item.pressed ? &#x27;true&#x27; : &#x27;false&#x27;);
       let html = &#x27;&lt;span class=&quot;tb-btn-inner&quot;&gt;&#x27;;
       if (item.svg) html += item.svg;
-      else html += &#x27;&lt;span class=&quot;tw-icon tw-icon--24 tb-icon&#x27; + (item.centered ? &#x27; tb-icon--centered&#x27; : &#x27;&#x27;) +
+      else if (item.icon) html += &#x27;&lt;span class=&quot;tw-icon tw-icon--24 tb-icon&#x27; + (item.centered ? &#x27; tb-icon--centered&#x27; : &#x27;&#x27;) +
         &#x27;&quot; aria-hidden=&quot;true&quot;&gt;&#x27; + item.icon + &#x27;&lt;/span&gt;&#x27;;
       if (item.text) html += &#x27;&lt;span class=&quot;tb-text&quot;&gt;&#x27; + item.text + &#x27;&lt;/span&gt;&#x27;;
       if (item.label) { html += &#x27;&lt;span class=&quot;tb-label&quot;&gt;&#x27; + item.label + &#x27;&lt;/span&gt;&#x27;; b.classList.add(&#x27;tb-btn--label&#x27;); }   // подпись как у кнопок тулбара окна расширенного режима
@@ -5914,8 +5928,47 @@ const Toolbar = (function () {
     return { fontWeight: f.bold ? &#x27;600&#x27; : &#x27;400&#x27;, fontStyle: f.italic ? &#x27;italic&#x27; : &#x27;normal&#x27; };
   }
 
+  // Нативное выделение текста внутри одной редактируемой ячейки, отдельно от диапазона ячеек.
+  function selectedTextRange() {
+    const sel = window.getSelection();
+    if (selection || !sel.rangeCount || sel.isCollapsed) return null;
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    const cell = (node.nodeType === 1 ? node : node.parentElement).closest(&#x27;th, td&#x27;);
+    if (!cell || !table.contains(cell) || !cell.contains(range.endContainer) || !range.toString()) return null;
+    return range.cloneRange();
+  }
+  const FMT_COMMANDS = { bold: &#x27;bold&#x27;, italic: &#x27;italic&#x27;, underline: &#x27;underline&#x27;, strike: &#x27;strikeThrough&#x27; };
+  // Ячейки остаются plaintext-only для вставки. Только команда форматирования временно включает rich text.
+  function withRichText(fn) {
+    const range = selectedTextRange();
+    if (!range) return;
+    const node = range.startContainer;
+    const cell = (node.nodeType === 1 ? node : node.parentElement).closest(&#x27;th, td&#x27;);
+    const editable = cell.contentEditable;
+    cell.contentEditable = &#x27;true&#x27;;
+    try { return fn(); } finally { cell.contentEditable = editable; }
+  }
+  function selectedTextFormat() {
+    return withRichText(function () {
+      const fmt = {};
+      FMT_KEYS.forEach(function (key) { fmt[key] = document.queryCommandState(FMT_COMMANDS[key]); });
+      return fmt;
+    });
+  }
+  function runTextCommand(command, value) {
+    return withRichText(function () { return document.execCommand(command, false, value); });
+  }
+  function formatSelectedText(command, value) {
+    if (!selectedTextRange()) return;
+    if ([&#x27;bold&#x27;, &#x27;italic&#x27;, &#x27;underline&#x27;, &#x27;strikeThrough&#x27;, &#x27;foreColor&#x27;, &#x27;hiliteColor&#x27;, &#x27;createLink&#x27;, &#x27;unlink&#x27;, &#x27;removeFormat&#x27;].indexOf(command) &lt; 0) return;
+    change(function () { runTextCommand(command, value); });
+    table.dispatchEvent(new Event(&#x27;input&#x27;, { bubbles: true }));
+  }
+
   // Формат активного элемента: значение ключа true, если так оформлен весь текст.
   function activeTextFormat() {
+    if (selectedTextRange()) return selectedTextFormat();
     const ctx = context();
     if (!ctx) return null;
     if (ctx.kind === &#x27;cell&#x27;) {
@@ -5942,6 +5995,15 @@ const Toolbar = (function () {
   function applyTextFormat(fmt, keys) {
     const ctx = context();
     if (!ctx || !keys || !keys.length) return;
+    if (selectedTextRange()) {
+      change(function () {
+        keys.forEach(function (key) {
+          if (selectedTextFormat()[key] !== fmt[key]) runTextCommand(FMT_COMMANDS[key]);
+        });
+      });
+      table.dispatchEvent(new Event(&#x27;input&#x27;, { bubbles: true }));
+      return;
+    }
     if (ctx.kind === &#x27;cell&#x27;) { setPendingFormat(ctx.cell, fmt); return; }
     applyCellsFormat(activeCells(ctx), fmt, keys);
   }
@@ -6044,6 +6106,8 @@ const Toolbar = (function () {
 
   window.TableAPI = {
     context: context,
+    selectedTextRange: selectedTextRange,
+    formatSelectedText: formatSelectedText,
     columnCount: columnCount,
     // Диапазон R — одна ячейка (в т. ч. объединённая)?
     isSingleCellRange: function (R) {
@@ -6340,6 +6404,7 @@ const Toolbar = (function () {
     activeBox: activeBox,
     // Поставить тулбар (созданный с container: #tw-wrap) над активным элементом.
     placeToolbar: function (tb) {
+      if (selectedTextRange()) { tb.hide(); return; }
       const box = activeBox();
       if (!box) { tb.hide(); return; }
       tb.el.style.visibility = &#x27;hidden&#x27;;
@@ -8213,6 +8278,7 @@ const TableWindows = (function () {
   let raf = 0;
   function update() {
     raf = 0;
+    if (TableAPI.selectedTextRange()) { cellToolbar.hide(); return; }
     // Фокус в поле ввода открытого окна тулбара (например, «Отступы») — тулбар и окно остаются на месте.
     if (cellToolbar.openWin &amp;&amp; cellToolbar.openWin.win.contains(document.activeElement)) return;
     const ctx = TableAPI.context();
@@ -8228,11 +8294,165 @@ const TableWindows = (function () {
   table.addEventListener(&#x27;focusout&#x27;, schedule);
   document.addEventListener(&#x27;focusout&#x27;, function (e) { if (cellToolbar.openWin &amp;&amp; cellToolbar.openWin.win.contains(e.target)) schedule(); });   // ушли из поля окна
   table.addEventListener(&#x27;tw:selection&#x27;, schedule);
+  document.addEventListener(&#x27;selectionchange&#x27;, schedule);
   table.addEventListener(&#x27;input&#x27;, schedule);                  // строка выросла — тулбар следом
   new ResizeObserver(schedule).observe(table);
   new MutationObserver(schedule).observe(table, { childList: true, subtree: true, attributes: true, attributeFilter: [&#x27;colspan&#x27;, &#x27;rowspan&#x27;, &#x27;style&#x27;] });
   window.addEventListener(&#x27;resize&#x27;, schedule);
   window.addEventListener(&#x27;scroll&#x27;, schedule, true);   // тулбар прилипает к верхнему тулбару редактора при скролле страницы
+})();
+&lt;/script&gt;
+&lt;script&gt;/* Текстовый тулбар (Figma 3813:297664). Выделение текста и диапазон ячеек — разные режимы. */
+(function () {
+  const wrap = document.getElementById(&#x27;tw-wrap&#x27;);
+  const table = wrap.querySelector(&#x27;.tw&#x27;);
+  // Те же SVG уже используются в тулбаре документа: цвет текста, маркер и голосовой ввод.
+  function documentIcon(label) {
+    return document.querySelector(&#x27;.app-toolbar button[aria-label=&quot;&#x27; + label + &#x27;&quot;] svg&#x27;).outerHTML;
+  }
+  let toolbar, savedRange = null, savedBackward = false, raf = 0;
+  function restoreSelectionDirection(sel) {
+    if (!savedRange) return;
+    // Начальная точка остаётся на месте и при выделении справа налево.
+    const r = savedRange;
+    if (savedBackward) sel.setBaseAndExtent(r.endContainer, r.endOffset, r.startContainer, r.startOffset);
+    else { sel.removeAllRanges(); sel.addRange(r); }
+  }
+  function format(command, value) {
+    if (!savedRange || !savedRange.startContainer.isConnected) return;
+    const node = savedRange.startContainer;
+    const cell = (node.nodeType === 1 ? node : node.parentElement).closest(&#x27;th, td&#x27;);
+    cell.focus({ preventScroll: true });
+    const sel = window.getSelection();
+    restoreSelectionDirection(sel);
+    TableAPI.formatSelectedText(command, value);
+    savedRange = TableAPI.selectedTextRange();
+    restoreSelectionDirection(sel);
+    schedule();
+  }
+  function styleMenu(menu) {
+    const win = TableWindows.textStyle(toolbar);
+    win.classList.add(&#x27;twin--text-toolbar&#x27;);
+    toolbar.toggleWindow(win, menu ? &#x27;style&#x27; : &#x27;format&#x27;);
+    if (menu &amp;&amp; !win.hidden) win.querySelector(&#x27;.twin-back&#x27;).click();
+  }
+  function formatButton(id, icon, title, command) {
+    return { id: id, icon: icon, title: title, toggle: true,
+      isPressed: function () { const fmt = TableAPI.activeTextFormat(); return !!(fmt &amp;&amp; fmt[id]); },
+      onClick: function () { format(command); } };
+  }
+  const popups = {};
+  function popup(id, label, content) {
+    if (!popups[id]) {
+      const win = document.createElement(&#x27;div&#x27;);
+      win.className = &#x27;twin twin--text twin--text-toolbar&#x27;;
+      win.setAttribute(&#x27;role&#x27;, &#x27;dialog&#x27;);
+      win.setAttribute(&#x27;aria-label&#x27;, label);
+      win.hidden = true;
+      win.innerHTML = content;
+      win.addEventListener(&#x27;mousedown&#x27;, function (e) { if (!e.target.closest(&#x27;input&#x27;)) e.preventDefault(); });
+      popups[id] = win;
+    }
+    toolbar.toggleWindow(popups[id], id);
+    return popups[id];
+  }
+  function color(id, title, command, initial) {
+    const win = popup(id, title, &#x27;&lt;label&gt;&#x27; + title + &#x27; &lt;input type=&quot;color&quot; aria-label=&quot;&#x27; + title + &#x27;&quot; value=&quot;&#x27; + initial + &#x27;&quot;&gt;&lt;/label&gt;&#x27;);
+    if (!win._bound) {
+      win._bound = true;
+      win.querySelector(&#x27;input&#x27;).addEventListener(&#x27;change&#x27;, function (e) { format(command, e.target.value); toolbar.closeWindow(); });
+    }
+  }
+  function link() {
+    const win = popup(&#x27;link&#x27;, &#x27;Ссылка&#x27;, &#x27;&lt;label&gt;Ссылка &lt;input type=&quot;url&quot; aria-label=&quot;Адрес ссылки&quot; placeholder=&quot;https://&quot;&gt;&lt;/label&gt;&lt;button type=&quot;button&quot; class=&quot;twin-btn&quot; aria-label=&quot;Применить ссылку&quot;&gt;&lt;span class=&quot;tw-icon&quot;&gt;\uE75E&lt;/span&gt;&lt;/button&gt;&#x27;);
+    if (!win._bound) {
+      win._bound = true;
+      function apply() {
+        const value = win.querySelector(&#x27;input&#x27;).value.trim();
+        if (!/^(https?:\/\/|mailto:|tel:)/i.test(value)) return;
+        format(&#x27;createLink&#x27;, value);
+        toolbar.closeWindow();
+      }
+      win.querySelector(&#x27;button&#x27;).addEventListener(&#x27;click&#x27;, apply);
+      win.querySelector(&#x27;input&#x27;).addEventListener(&#x27;keydown&#x27;, function (e) { if (e.key === &#x27;Enter&#x27;) { e.preventDefault(); apply(); } });
+    }
+  }
+  toolbar = Toolbar.create({ container: wrap, label: &#x27;Форматирование текста&#x27;, items: [
+    { id: &#x27;style&#x27;, text: &#x27;Основной текст&#x27;, title: &#x27;Стиль текста&#x27;, arrow: true, onClick: function () { styleMenu(true); } },
+    { sep: true },
+    { id: &#x27;format&#x27;, icon: &#x27;\uE764&#x27;, title: &#x27;Настроить текст&#x27;, onClick: function () { styleMenu(false); } },
+    { sep: true },
+    formatButton(&#x27;bold&#x27;, &#x27;\uE6C3&#x27;, &#x27;Жирный&#x27;, &#x27;bold&#x27;),
+    formatButton(&#x27;italic&#x27;, &#x27;\uE6C6&#x27;, &#x27;Курсив&#x27;, &#x27;italic&#x27;),
+    formatButton(&#x27;underline&#x27;, &#x27;\uE6CE&#x27;, &#x27;Подчёркнутый&#x27;, &#x27;underline&#x27;),
+    formatButton(&#x27;strike&#x27;, &#x27;\uE6CB&#x27;, &#x27;Зачёркнутый&#x27;, &#x27;strikeThrough&#x27;),
+    { sep: true },
+    { id: &#x27;color&#x27;, svg: documentIcon(&#x27;Цвет текста&#x27;), title: &#x27;Цвет текста&#x27;, onClick: function () { color(&#x27;color&#x27;, &#x27;Цвет текста&#x27;, &#x27;foreColor&#x27;, &#x27;#000000&#x27;); } },
+    { id: &#x27;background&#x27;, svg: documentIcon(&#x27;Цвет выделения&#x27;), title: &#x27;Фон текста&#x27;, onClick: function () { color(&#x27;background&#x27;, &#x27;Фон текста&#x27;, &#x27;hiliteColor&#x27;, &#x27;#ffffff&#x27;); } },
+    { sep: true },
+    { id: &#x27;link&#x27;, icon: &#x27;\uE6A7&#x27;, title: &#x27;Ссылка&#x27;, onClick: link },
+    { id: &#x27;voice&#x27;, svg: documentIcon(&#x27;Голосовой ввод&#x27;), title: &#x27;Голосовой ввод&#x27;, onClick: function () { document.querySelector(&#x27;.app-toolbar [aria-label=&quot;Голосовой ввод&quot;]&#x27;).click(); } },
+    { id: &#x27;more&#x27;, icon: &#x27;\uEAB4&#x27;, title: &#x27;Ещё&#x27;, onClick: function () {
+      const win = popup(&#x27;more&#x27;, &#x27;Ещё&#x27;, &#x27;&lt;button type=&quot;button&quot; class=&quot;twin-menu-item&quot; data-command=&quot;removeFormat&quot;&gt;Сбросить форматирование&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;twin-menu-item&quot; data-command=&quot;unlink&quot;&gt;Удалить ссылку&lt;/button&gt;&#x27;);
+      if (!win._bound) {
+        win._bound = true;
+        win.addEventListener(&#x27;click&#x27;, function (e) { const b = e.target.closest(&#x27;[data-command]&#x27;); if (b) { format(b.dataset.command); toolbar.closeWindow(); } });
+      }
+    } }
+  ] });
+  toolbar.el.classList.add(&#x27;tb--text&#x27;);
+  function update() {
+    raf = 0;
+    const range = TableAPI.selectedTextRange();
+    const inPopup = toolbar.openWin &amp;&amp; toolbar.openWin.win.contains(document.activeElement);
+    const busy = document.documentElement.matches(&#x27;.tw-cell-selecting, .tw-dragging, .tw-resizing&#x27;);
+    if (busy || wrap.closest(&#x27;.table-widget&#x27;).hidden || (!inPopup &amp;&amp; (!range || !table.contains(document.activeElement)))) {
+      toolbar.hide();
+      savedRange = null;
+      return;
+    }
+    if (range) {
+      savedRange = range;
+      const sel = window.getSelection();
+      savedBackward = sel.anchorNode === range.endContainer &amp;&amp; sel.anchorOffset === range.endOffset;
+    }
+    if (!savedRange || !savedRange.startContainer.isConnected) { toolbar.hide(); return; }
+    const rects = Array.from(savedRange.getClientRects()).filter(function (r) { return r.width &amp;&amp; r.height; });
+    const scroll = table.closest(&#x27;.table-scroll&#x27;).getBoundingClientRect();
+    const appBar = document.querySelector(&#x27;.tw-in-window .tw-win-head&#x27;) || document.querySelector(&#x27;.app-toolbar&#x27;);
+    const ceiling = appBar ? Math.max(0, appBar.getBoundingClientRect().bottom) : 0;
+    // Range всегда упорядочен по документу; направление Selection определяет реальную точку начала.
+    const anchor = savedRange.cloneRange();
+    anchor.collapse(!savedBackward);
+    let box = Array.from(anchor.getClientRects()).find(function (r) { return r.height; });
+    // При выделении узла целиком граница Range может лежать на элементе без собственного caret-rect.
+    if (!box &amp;&amp; rects.length) {
+      const edge = savedBackward ? rects[rects.length - 1] : rects[0];
+      box = { left: savedBackward ? edge.right : edge.left, top: edge.top, bottom: edge.bottom };
+    }
+    if (!box || box.left &lt; scroll.left || box.left &gt; scroll.right || box.bottom &lt;= ceiling || box.top &gt;= window.innerHeight) { toolbar.hide(); return; }
+    toolbar.el.hidden = false;
+    const w = toolbar.el.offsetWidth, h = toolbar.el.offsetHeight;
+    const wr = wrap.getBoundingClientRect();
+    const left = Math.max(0, Math.min(box.left - w / 2, document.documentElement.clientWidth - w));
+    toolbar.showAt(left - wr.left, Math.max(ceiling, box.top - h - 8) - wr.top);
+  }
+  function schedule() { if (!raf) raf = requestAnimationFrame(update); }
+  document.addEventListener(&#x27;selectionchange&#x27;, schedule);
+  document.addEventListener(&#x27;focusin&#x27;, schedule);
+  document.addEventListener(&#x27;focusout&#x27;, schedule);
+  document.addEventListener(&#x27;pointerup&#x27;, schedule);
+  document.addEventListener(&#x27;pointercancel&#x27;, schedule);
+  document.addEventListener(&#x27;keydown&#x27;, function (e) {
+    if (e.key === &#x27;Escape&#x27; &amp;&amp; toolbar.openWin) { toolbar.closeWindow(); schedule(); }
+  });
+  table.addEventListener(&#x27;input&#x27;, schedule);
+  table.addEventListener(&#x27;tw:selection&#x27;, schedule);
+  window.addEventListener(&#x27;scroll&#x27;, schedule, true);
+  window.addEventListener(&#x27;resize&#x27;, schedule);
+  new ResizeObserver(schedule).observe(table);
+  new MutationObserver(schedule).observe(table, { childList: true, subtree: true, characterData: true });
+  new MutationObserver(schedule).observe(document.documentElement, { attributes: true, attributeFilter: [&#x27;class&#x27;] });
 })();
 &lt;/script&gt;
 &lt;script&gt;/* Таблица сохраняет активную обводку при курсоре или выделении ячеек.
